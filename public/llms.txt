@@ -1,0 +1,26 @@
+# Murmur
+
+> A calm, private, local-first message & notes vault. Your notes are end-to-end
+> encrypted in the browser and autosaved to a Google Sheet you own — no servers,
+> no tracking, open source (Apache-2.0).
+
+Murmur is a Slack-like web app for keeping personal messages, ideas, links, and
+todos in channels. It is local-first (data cached as date-wise JSON in the
+browser via IndexedDB), works offline, and installs as a PWA. A key derived from
+your password (PBKDF2 → AES-GCM) never leaves your device; the login directory
+only ever stores ciphertext, so it is zero-knowledge by design.
+
+## Key facts
+- Category: private notes app, encrypted note-taking, open-source Slack alternative
+- Price: free and open source (Apache License 2.0)
+- Data storage: the user's own Google Sheet (via a Google Apps Script they deploy) + local IndexedDB
+- Privacy: end-to-end encrypted, zero-knowledge, no analytics, no cookies for tracking
+- Platforms: any modern browser; installable PWA on desktop, iOS, Android
+- Tech: Next.js, React, TypeScript, Tailwind CSS, Google Apps Script
+
+## Links
+- App: https://murmur-chat.vercel.app/app
+- Home: https://murmur-chat.vercel.app
+- Source code: https://github.com/tusharmali/murmur
+- Privacy policy: https://murmur-chat.vercel.app/privacy
+- Security overview: https://murmur-chat.vercel.app/security
