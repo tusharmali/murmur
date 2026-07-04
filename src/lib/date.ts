@@ -71,9 +71,10 @@ export function timeAgo(ts: number): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export function prettyTime(ts: number): string {
+export function prettyTime(ts: number, format: "12h" | "24h" = "12h"): string {
   return new Date(ts).toLocaleTimeString(undefined, {
-    hour: "numeric",
+    hour: format === "24h" ? "2-digit" : "numeric",
     minute: "2-digit",
+    hour12: format === "12h",
   });
 }

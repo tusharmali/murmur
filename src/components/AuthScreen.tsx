@@ -47,7 +47,7 @@ export default function AuthScreen() {
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-lav-400 to-lav-600 text-white shadow-glow">
           <Sparkles size={22} />
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-lav-800">Murmur</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-lav-800 dark:text-lav-100">Murmur</h1>
       </div>
 
       {!masterReady ? (
@@ -79,8 +79,8 @@ function MasterConfig(props: {
   error: string;
 }) {
   return (
-    <div className="w-full max-w-md animate-fade-in rounded-3xl bg-white/80 p-7 shadow-soft ring-1 ring-lav-200/60 backdrop-blur">
-      <h2 className="text-lg font-semibold text-lav-800">Connect the master endpoint</h2>
+    <div className="w-full max-w-md animate-fade-in rounded-3xl bg-white/80 p-7 shadow-soft ring-1 ring-lav-200/60 backdrop-blur dark:bg-night-800/80 dark:ring-night-border">
+      <h2 className="text-lg font-semibold text-lav-800 dark:text-lav-100">Connect the master endpoint</h2>
       <p className="mt-1 text-sm text-lav-500">
         One-time setup for this deployment. Paste your <b>master</b> Apps Script Web App URL
         (the auth database).
@@ -89,7 +89,7 @@ function MasterConfig(props: {
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
         placeholder="https://script.google.com/macros/s/…/exec"
-        className="mt-4 w-full rounded-xl border border-lav-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200"
+        className="mt-4 w-full rounded-xl border border-lav-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200 dark:border-night-border dark:bg-night-700 dark:text-lav-100 dark:placeholder:text-lav-400"
       />
       {props.error && <p className="mt-2 text-sm text-rose-500">{props.error}</p>}
       <button
@@ -127,14 +127,16 @@ function AuthCard({ onReconfigure }: { onReconfigure?: () => void }) {
   }
 
   return (
-    <div className="w-full max-w-md animate-fade-in rounded-3xl bg-white/80 p-7 shadow-soft ring-1 ring-lav-200/60 backdrop-blur">
-      <div className="mb-5 flex rounded-xl bg-lav-100 p-1 text-sm font-medium">
+    <div className="w-full max-w-md animate-fade-in rounded-3xl bg-white/80 p-7 shadow-soft ring-1 ring-lav-200/60 backdrop-blur dark:bg-night-800/80 dark:ring-night-border">
+      <div className="mb-5 flex rounded-xl bg-lav-100 p-1 text-sm font-medium dark:bg-night-700">
         {(["login", "register"] as const).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
             className={`flex-1 rounded-lg py-1.5 transition ${
-              mode === m ? "bg-white text-lav-700 shadow-soft" : "text-lav-500"
+              mode === m
+                ? "bg-white text-lav-700 shadow-soft dark:bg-night-500 dark:text-lav-100"
+                : "text-lav-500 dark:text-lav-400"
             }`}
           >
             {m === "login" ? "Sign in" : "Create account"}
@@ -155,8 +157,8 @@ function AuthCard({ onReconfigure }: { onReconfigure?: () => void }) {
         {mode === "register" && (
           <>
             <Field label="Display name" value={displayName} onChange={setDisplayName} placeholder="Alex" />
-            <div className="rounded-2xl bg-lav-50 p-3.5 ring-1 ring-lav-200/70">
-              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-lav-700">
+            <div className="rounded-2xl bg-lav-50 p-3.5 ring-1 ring-lav-200/70 dark:bg-night-700/60 dark:ring-night-border">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-lav-700 dark:text-lav-200">
                 <Lock size={12} /> Your private Google Sheet
               </p>
               <Field
@@ -221,7 +223,7 @@ function Field(props: {
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
         placeholder={props.placeholder}
-        className="w-full rounded-xl border border-lav-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200"
+        className="w-full rounded-xl border border-lav-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200 dark:border-night-border dark:bg-night-700 dark:text-lav-100 dark:placeholder:text-lav-400"
       />
     </label>
   );

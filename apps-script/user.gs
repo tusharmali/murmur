@@ -43,6 +43,8 @@ function doPost(e) {
       case 'getByDate': res = getByDate(req.date); break;
       case 'getByChannel': res = getByChannel(req.channel); break;
       case 'getAll':    res = getAll(); break;
+      case 'getSettings': res = getSettings(); break;
+      case 'setSettings': res = setSettings(req.settings); break;
       default:          res = { ok: false, error: 'unknown_action' };
     }
     return json(res);
@@ -195,6 +197,20 @@ function getAll() {
   var out = [];
   for (var i = 0; i < rows.length; i++) out.push(messageFromRow_(rows[i]));
   return { ok: true, messages: out };
+}
+
+/* ----------------- settings (cross-device prefs) ----------------- */
+// Stored as a single JSON blob in this sheet's document properties — no rows,
+// no extra tabs. Lets a user's appearance settings follow them across devices.
+
+function getSettings() {
+  var v = PropertiesService.getDocumentProperties().getProperty('murmur_settings');
+  return { ok: true, settings: v || '' };
+}
+
+function setSettings(settings) {
+  PropertiesService.getDocumentProperties().setProperty('murmur_settings', String(settings || ''));
+  return { ok: true };
 }
 
 function json(obj) {

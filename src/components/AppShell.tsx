@@ -40,8 +40,8 @@ export default function AppShell() {
       <Sidebar onOpenSettings={() => setSettingsOpen(true)} />
 
       <main className="flex min-w-0 flex-1 flex-col">
-        <header className="glass z-10 flex items-center gap-3 border-b border-lav-200/60 px-5 py-3">
-          <div className="flex items-center gap-2 font-semibold text-lav-800">
+        <header className="glass z-10 flex items-center gap-3 border-b border-lav-200/60 px-5 py-3 dark:border-night-border">
+          <div className="flex items-center gap-2 font-semibold text-lav-800 dark:text-lav-100">
             {icon}
             <span>{title}</span>
           </div>
@@ -55,7 +55,7 @@ export default function AppShell() {
               onClick={() => syncChannel(activeChannel)}
               disabled={syncing}
               title="Sync & reload this channel"
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-lav-600 transition hover:bg-lav-100 disabled:opacity-60"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-lav-600 transition hover:bg-lav-100 disabled:opacity-60 dark:text-lav-300 dark:hover:bg-night-700"
             >
               <RefreshCw size={13} className={syncing ? "animate-spin" : ""} />
               {syncing ? "Syncing…" : "Sync"}
@@ -72,7 +72,7 @@ export default function AppShell() {
                 value={searchQuery}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search everything…"
-                className="w-56 rounded-xl border border-lav-200 bg-white/70 py-2 pl-9 pr-8 text-sm outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200"
+                className="w-56 rounded-xl border border-lav-200 bg-white/70 py-2 pl-9 pr-8 text-sm outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200 dark:border-night-border dark:bg-night-700/70 dark:text-lav-100 dark:placeholder:text-lav-400"
               />
               {searchQuery && (
                 <button

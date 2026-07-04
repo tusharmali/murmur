@@ -2,9 +2,19 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
+  darkMode: ["selector", '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
+        // Dark-theme neutrals (purple-tinted so it stays on-brand)
+        night: {
+          900: "#151221",
+          800: "#1b1730",
+          700: "#221d3a",
+          600: "#2c2648",
+          500: "#3a3358",
+          border: "#332c52",
+        },
         lav: {
           50: "#f8f6fe",
           100: "#f0ebfc",

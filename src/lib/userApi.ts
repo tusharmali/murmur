@@ -37,3 +37,14 @@ export async function remoteGetByChannel(
 ): Promise<{ ok: boolean; messages: Message[] }> {
   return post(c.scriptUrl, { action: "getByChannel", token: c.token, channel });
 }
+
+/** Cross-device settings blob, stored in the user's own sheet (PropertiesService). */
+export async function remoteGetSettings(
+  c: Conn
+): Promise<{ ok: boolean; settings?: string }> {
+  return post(c.scriptUrl, { action: "getSettings", token: c.token });
+}
+
+export async function remoteSetSettings(c: Conn, settings: string) {
+  return post(c.scriptUrl, { action: "setSettings", token: c.token, settings });
+}

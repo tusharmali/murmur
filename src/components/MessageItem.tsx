@@ -25,6 +25,7 @@ export default function MessageItem({
   const togglePin = useStore((s) => s.togglePin);
   const remove = useStore((s) => s.remove);
   const edit = useStore((s) => s.edit);
+  const settings = useStore((s) => s.settings);
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.text);
@@ -47,23 +48,27 @@ export default function MessageItem({
 
   return (
     <div
-      className={`group relative flex gap-3 rounded-xl px-2 py-1.5 transition hover:bg-lav-50 ${
-        message.pinned ? "bg-pastel-yellow/40" : ""
-      }`}
+      className={`msg-row group relative flex gap-3 rounded-xl px-2 py-1.5 transition hover:bg-lav-50 dark:hover:bg-night-700 ${
+        message.pinned ? "bg-pastel-yellow/40 dark:bg-amber-400/10" : ""
+      } ${settings.messageSeparators ? "border-b border-lav-100 dark:border-night-border/60" : ""}`}
     >
-      <div
-        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${color} text-sm font-semibold text-white`}
-      >
-        {name.slice(0, 1).toUpperCase()}
-      </div>
+      {settings.showAvatars && (
+        <div
+          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${color} text-sm font-semibold text-white`}
+        >
+          {name.slice(0, 1).toUpperCase()}
+        </div>
+      )}
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <span className="text-sm font-semibold text-lav-800">{name}</span>
-          <span className="text-[11px] text-lav-400">{prettyTime(message.ts)}</span>
+          {settings.showSenderNames && (
+            <span className="text-sm font-semibold text-lav-800 dark:text-lav-100">{name}</span>
+          )}
+          <span className="text-[11px] text-lav-400">{prettyTime(message.ts, settings.timeFormat)}</span>
           {message.editedTs && <span className="text-[11px] text-lav-300">(edited)</span>}
           {showChannel && (
-            <span className="rounded-md bg-lav-100 px-1.5 py-0.5 text-[10px] font-medium text-lav-500">
+            <span className="rounded-md bg-lav-100 px-1.5 py-0.5 text-[10px] font-medium text-lav-500 dark:bg-night-600 dark:text-lav-300">
               #{message.channel}
             </span>
           )}
@@ -87,7 +92,7 @@ export default function MessageItem({
                 }
               }}
               rows={Math.min(6, draft.split("\n").length)}
-              className="w-full resize-none rounded-lg border border-lav-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-lav-200"
+              className="w-full resize-none rounded-lg border border-lav-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-lav-200 dark:border-night-border dark:bg-night-700 dark:text-lav-100"
             />
             <div className="mt-1.5 flex gap-2">
               <button
@@ -108,14 +113,14 @@ export default function MessageItem({
             </div>
           </div>
         ) : (
-          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-lav-700">
+          <p className="msg-text whitespace-pre-wrap break-words leading-relaxed text-lav-700 dark:text-lav-200">
             {linkify(message.text)}
           </p>
         )}
       </div>
 
       {!editing && (
-        <div className="absolute -top-3 right-3 hidden items-center gap-0.5 rounded-xl bg-white p-0.5 shadow-soft ring-1 ring-lav-200/70 group-hover:flex">
+        <div className="absolute -top-3 right-3 hidden items-center gap-0.5 rounded-xl bg-white p-0.5 shadow-soft ring-1 ring-lav-200/70 group-hover:flex dark:bg-night-600 dark:ring-night-border">
           <IconBtn title="Copy" onClick={copy}>
             {copied ? <Check size={15} className="text-emerald-500" /> : <Copy size={15} />}
           </IconBtn>
@@ -157,8 +162,8 @@ function IconBtn({
     <button
       title={title}
       onClick={onClick}
-      className={`flex h-7 w-7 items-center justify-center rounded-lg text-lav-500 transition hover:bg-lav-100 ${
-        danger ? "hover:bg-rose-100 hover:text-rose-500" : ""
+      className={`flex h-7 w-7 items-center justify-center rounded-lg text-lav-500 transition hover:bg-lav-100 dark:text-lav-300 dark:hover:bg-night-700 ${
+        danger ? "hover:bg-rose-100 hover:text-rose-500 dark:hover:bg-rose-500/20" : ""
       }`}
     >
       {children}

@@ -51,6 +51,24 @@ export type Keyring = Record<string, string>;
 
 export type SyncState = "idle" | "syncing" | "offline" | "error";
 
+export type ThemeMode = "system" | "light" | "dark";
+export type Density = "comfortable" | "compact";
+export type FontScale = "sm" | "md" | "lg";
+export type TimeFormat = "12h" | "24h";
+
+/** All user-adjustable appearance & behavior preferences. */
+export interface AppSettings {
+  theme: ThemeMode;
+  density: Density;
+  fontScale: FontScale;
+  showAvatars: boolean;
+  showSenderNames: boolean;
+  showDateDividers: boolean;
+  messageSeparators: boolean;
+  timeFormat: TimeFormat;
+  enterToSend: boolean;
+}
+
 export interface QueueItem {
   key: string; // message id
   op: "upsert" | "delete";

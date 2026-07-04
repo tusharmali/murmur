@@ -12,6 +12,7 @@ export default function MessageList() {
   const view = useStore((s) => s.view);
   const activeChannel = useStore((s) => s.activeChannel);
   const searchQuery = useStore((s) => s.searchQuery);
+  const showDividers = useStore((s) => s.settings.showDateDividers);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const grouped = useMemo(() => {
@@ -54,11 +55,13 @@ export default function MessageList() {
     <div className="flex-1 overflow-y-auto px-5 py-4">
       {grouped.map((g) => (
         <div key={g.date}>
-          <div className="sticky top-0 z-[1] my-3 flex items-center justify-center">
-            <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-lav-500 shadow-soft ring-1 ring-lav-200/60 backdrop-blur">
-              {prettyDate(g.date)}
-            </span>
-          </div>
+          {showDividers && (
+            <div className="sticky top-0 z-[1] my-3 flex items-center justify-center">
+              <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-lav-500 shadow-soft ring-1 ring-lav-200/60 backdrop-blur dark:bg-night-600/80 dark:text-lav-300 dark:ring-night-border">
+                {prettyDate(g.date)}
+              </span>
+            </div>
+          )}
           <div className="space-y-0.5">
             {g.items.map((m) => (
               <MessageItem key={m.id} message={m} showChannel={view !== "channel"} />
@@ -94,10 +97,10 @@ function EmptyState({
   }
   return (
     <div className="flex flex-1 flex-col items-center justify-center text-center text-lav-400">
-      <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-3xl bg-lav-100 text-lav-500">
+      <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-3xl bg-lav-100 text-lav-500 dark:bg-night-700 dark:text-lav-300">
         {icon}
       </div>
-      <p className="text-base font-medium text-lav-700">{title}</p>
+      <p className="text-base font-medium text-lav-700 dark:text-lav-200">{title}</p>
       <p className="mt-1 max-w-xs text-sm">{sub}</p>
     </div>
   );

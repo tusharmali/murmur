@@ -88,7 +88,7 @@ export default function ChannelAccessModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md animate-fade-in rounded-3xl bg-white p-6 text-lav-800 shadow-glow"
+        className="w-full max-w-md animate-fade-in rounded-3xl bg-white p-6 text-lav-800 shadow-glow dark:bg-night-800 dark:text-lav-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-1 flex items-center justify-between">
@@ -119,12 +119,12 @@ export default function ChannelAccessModal({
         ) : (
           <>
             {code && (
-              <div className="mb-4 rounded-2xl bg-lav-50 p-3.5 ring-1 ring-lav-200/60">
+              <div className="mb-4 rounded-2xl bg-lav-50 p-3.5 ring-1 ring-lav-200/60 dark:bg-night-700/50 dark:ring-night-border">
                 <p className="mb-1 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-lav-400">
                   <ShieldCheck size={12} /> Invite code {isOwner ? "" : "(from your join)"}
                 </p>
                 <div className="flex items-center gap-2">
-                  <code className="min-w-0 flex-1 truncate rounded-lg bg-white px-2.5 py-2 text-xs text-lav-600 ring-1 ring-lav-200">
+                  <code className="min-w-0 flex-1 truncate rounded-lg bg-white px-2.5 py-2 text-xs text-lav-600 ring-1 ring-lav-200 dark:bg-night-800 dark:text-lav-300 dark:ring-night-border">
                     {code}
                   </code>
                   <button
@@ -154,7 +154,7 @@ export default function ChannelAccessModal({
                 return (
                   <li
                     key={m}
-                    className="flex items-center gap-2 rounded-xl bg-lav-50 px-3 py-2 text-sm"
+                    className="flex items-center gap-2 rounded-xl bg-lav-50 px-3 py-2 text-sm dark:bg-night-700/50"
                   >
                     {owner ? (
                       <Crown size={14} className="text-amber-500" />
@@ -185,7 +185,7 @@ export default function ChannelAccessModal({
                   onChange={(e) => setNewMember(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && add()}
                   placeholder="add by email…"
-                  className="flex-1 rounded-xl border border-lav-200 px-3 py-2 text-sm outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200"
+                  className="flex-1 rounded-xl border border-lav-200 px-3 py-2 text-sm outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200 dark:border-night-border dark:bg-night-700 dark:text-lav-100 dark:placeholder:text-lav-400"
                 />
                 <button
                   onClick={add}

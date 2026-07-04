@@ -30,7 +30,7 @@ export default function JoinChannelModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md animate-fade-in rounded-3xl bg-white p-6 text-lav-800 shadow-glow"
+        className="w-full max-w-md animate-fade-in rounded-3xl bg-white p-6 text-lav-800 shadow-glow dark:bg-night-800 dark:text-lav-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-1 flex items-center justify-between">
@@ -51,7 +51,7 @@ export default function JoinChannelModal({ onClose }: { onClose: () => void }) {
           onChange={(e) => setCode(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
           placeholder="channelId~key…"
-          className="w-full rounded-xl border border-lav-200 px-3.5 py-2.5 text-sm outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200"
+          className="w-full rounded-xl border border-lav-200 px-3.5 py-2.5 text-sm outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200 dark:border-night-border dark:bg-night-700 dark:text-lav-100 dark:placeholder:text-lav-400"
         />
         {error && <p className="mt-2 text-sm text-rose-500">{error}</p>}
         <button

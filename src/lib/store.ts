@@ -36,10 +36,14 @@ import {
   remoteGetByChannel,
   remoteGetDates,
   remoteUpsert,
+  remoteGetSettings,
+  remoteSetSettings,
   userPing,
 } from "./userApi";
 import { DEFAULT_CHANNELS, slugify } from "./defaults";
 import { todayKey, coerceDateKey, isDateKey } from "./date";
+import type { AppSettings } from "./types";
+import { DEFAULT_SETTINGS, loadSettings, saveSettings } from "./settings";
 
 const SESSION_KEY = "murmur::session";
 
@@ -63,6 +67,10 @@ interface State {
   initialSync: InitialSync;
   channelSync: Record<string, boolean>; // channelId -> currently pull-syncing
   lastSynced: Record<string, number>; // channelId -> last successful pull (epoch ms)
+
+  settings: AppSettings;
+  initSettings: () => void;
+  setSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
 
   bootstrap: () => Promise<void>;
   register: (p: RegisterParams) => Promise<boolean>;
@@ -140,8 +148,21 @@ export const useStore = create<State>((set, get) => ({
   initialSync: { active: false, total: 0, done: 0, currentDate: "" },
   channelSync: {},
   lastSynced: {},
+  settings: DEFAULT_SETTINGS,
+
+  initSettings: () => {
+    set({ settings: loadSettings() });
+  },
+
+  setSetting: (key, value) => {
+    const next = { ...get().settings, [key]: value };
+    set({ settings: next });
+    saveSettings(next);
+    pushSettings(get); // debounced cross-device sync
+  },
 
   bootstrap: async () => {
+    get().initSettings();
     const session = loadSession();
     if (!session) {
       set({ ready: true });
@@ -154,6 +175,7 @@ export const useStore = create<State>((set, get) => ({
     set({ session, channels, days, ready: true, activeChannel: firstPersonal(channels) });
     get().processQueue();
     get().refreshSharedChannels();
+    pullSettings(get);
     startSyncLoop(get);
   },
 
@@ -245,6 +267,7 @@ export const useStore = create<State>((set, get) => ({
       });
       startSyncLoop(get);
 
+      pullSettings(get); // cross-device appearance settings
       await loadSharedChannels(get, set); // dynamically load shared channels + members
       if (!synced) get().runInitialSync();
       else {
@@ -784,6 +807,40 @@ async function loadSharedChannels(get: () => State, set: (p: Partial<State>) => 
   } catch {
     /* offline — keep locally cached channels */
   }
+}
+
+let settingsTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Pull cross-device settings from the user's own sheet; remote wins. */
+async function pullSettings(get: () => State) {
+  const s = get().session;
+  if (!s) return;
+  try {
+    const res = await remoteGetSettings({ scriptUrl: s.scriptUrl, token: s.token });
+    if (res?.ok && res.settings) {
+      const remote = JSON.parse(res.settings) as Partial<AppSettings>;
+      const merged = { ...DEFAULT_SETTINGS, ...get().settings, ...remote };
+      useStore.setState({ settings: merged });
+      saveSettings(merged);
+    }
+  } catch {
+    /* offline or user.gs not redeployed — keep local settings */
+  }
+}
+
+/** Debounced push of settings to the user's own sheet. */
+function pushSettings(get: () => State) {
+  const s = get().session;
+  if (!s) return;
+  if (settingsTimer) clearTimeout(settingsTimer);
+  settingsTimer = setTimeout(() => {
+    remoteSetSettings(
+      { scriptUrl: s.scriptUrl, token: s.token },
+      JSON.stringify(get().settings)
+    ).catch(() => {
+      /* best effort */
+    });
+  }, 800);
 }
 
 function startSyncLoop(get: () => State) {

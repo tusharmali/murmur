@@ -44,6 +44,42 @@ body {
   backdrop-filter: blur(12px);
 }
 
+/* ---------- App theming (scoped to .app-root, never the marketing site) ---------- */
+
+/* Light: inherit the body gradient. Dark: paint our own surface. */
+.app-root[data-theme="dark"] {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, #241d3d 0%, transparent 55%),
+    radial-gradient(1000px 500px at 110% 10%, #2a1f3a 0%, transparent 50%),
+    #17131f;
+  color: #d9d3ea;
+}
+
+/* Frosted header/panels in dark */
+.app-root[data-theme="dark"] .glass {
+  background: rgba(27, 23, 48, 0.72);
+}
+
+/* Message body honors the font-scale setting */
+.msg-text {
+  font-size: calc(0.875rem * var(--mur-font-scale, 1));
+}
+
+/* Compact density tightens message rows */
+.app-root[data-density="compact"] .msg-row {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+.app-root[data-density="compact"] .msg-row .msg-text {
+  line-height: 1.35;
+}
+
+/* Custom scrollbars adapt to dark */
+.app-root[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  background: #3a3358;
+  background-clip: content-box;
+}
+
 /* ---------- Marketing / landing helpers ---------- */
 
 /* Animated lavender gradient text */
