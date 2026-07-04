@@ -61,6 +61,8 @@ interface State {
   sync: SyncState;
   pending: number;
   initialSync: InitialSync;
+  channelSync: Record<string, boolean>; // channelId -> currently pull-syncing
+  lastSynced: Record<string, number>; // channelId -> last successful pull (epoch ms)
 
   bootstrap: () => Promise<void>;
   register: (p: RegisterParams) => Promise<boolean>;
@@ -71,6 +73,7 @@ interface State {
   setView: (v: View) => void;
   setSearch: (q: string) => void;
   addChannel: (name: string) => Promise<void>;
+  syncChannel: (channelId: string) => Promise<void>;
 
   send: (text: string) => Promise<void>;
   edit: (m: Message, text: string) => Promise<void>;
@@ -135,6 +138,8 @@ export const useStore = create<State>((set, get) => ({
   sync: "idle",
   pending: 0,
   initialSync: { active: false, total: 0, done: 0, currentDate: "" },
+  channelSync: {},
+  lastSynced: {},
 
   bootstrap: async () => {
     const session = loadSession();
@@ -269,10 +274,15 @@ export const useStore = create<State>((set, get) => ({
       sync: "idle",
       pending: 0,
       initialSync: { active: false, total: 0, done: 0, currentDate: "" },
+      channelSync: {},
+      lastSynced: {},
     });
   },
 
-  setActiveChannel: (id) => set({ activeChannel: id, view: "channel" }),
+  setActiveChannel: (id) => {
+    set({ activeChannel: id, view: "channel" });
+    get().syncChannel(id); // reload this channel's chats on open (targeted)
+  },
   setView: (v) => set({ view: v }),
   setSearch: (q) => set({ searchQuery: q, view: q ? "search" : "channel" }),
 
@@ -340,6 +350,32 @@ export const useStore = create<State>((set, get) => ({
     await db.enqueue({ key: m.id, op: "delete", message: m, tries: 0, ts: Date.now() });
     bumpPending(set);
     get().processQueue();
+  },
+
+  /** Push pending writes, then pull ONLY this channel and reload its chats. */
+  syncChannel: async (channelId) => {
+    if (!channelId || get().channelSync[channelId]) return; // busy / invalid
+    const conn = connForChannel(get, channelId);
+    if (!conn) return;
+    set((s) => ({ channelSync: { ...s.channelSync, [channelId]: true } }));
+    try {
+      await get().processQueue();
+      // Don't overwrite local writes that haven't reached the sheet yet.
+      const stillPending = (await db.getQueue()).some(
+        (q) => (q.message?.channel || "") === channelId
+      );
+      if (!stillPending) {
+        const res = await remoteGetByChannel(conn, channelId);
+        if (res?.ok) {
+          await replaceChannelMessages(set, channelId, res.messages || []);
+          set((s) => ({ lastSynced: { ...s.lastSynced, [channelId]: Date.now() } }));
+        }
+      }
+    } catch {
+      set({ sync: "offline" });
+    } finally {
+      set((s) => ({ channelSync: { ...s.channelSync, [channelId]: false } }));
+    }
   },
 
   processQueue: async () => {
@@ -754,7 +790,11 @@ function startSyncLoop(get: () => State) {
   if (syncTimer) clearInterval(syncTimer);
   syncTimer = setInterval(() => {
     get().processQueue();
-    get().refreshSharedChannels();
+    // Targeted: only auto-pull the channel you're looking at, and only if it's
+    // shared (others may be posting). Personal channels reload on open / on demand.
+    const active = get().activeChannel;
+    const ch = get().channels.find((c) => c.id === active);
+    if (get().view === "channel" && ch?.kind === "shared") get().syncChannel(active);
   }, 15000);
   if (typeof window !== "undefined") {
     window.addEventListener("online", () => get().processQueue());

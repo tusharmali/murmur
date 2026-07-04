@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import type { Channel } from "@/lib/types";
-import { Sparkles, Star, Plus, Settings, Hash, Users, Link2, UserPlus } from "lucide-react";
+import { Sparkles, Star, Plus, Settings, Hash, Users, Link2, UserPlus, RefreshCw } from "lucide-react";
 import ChannelAccessModal from "./ChannelAccessModal";
 import JoinChannelModal from "./JoinChannelModal";
 
@@ -16,6 +16,8 @@ export default function Sidebar({ onOpenSettings }: { onOpenSettings: () => void
   const setView = useStore((s) => s.setView);
   const addChannel = useStore((s) => s.addChannel);
   const session = useStore((s) => s.session);
+  const syncChannel = useStore((s) => s.syncChannel);
+  const channelSync = useStore((s) => s.channelSync);
 
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -77,6 +79,8 @@ export default function Sidebar({ onOpenSettings }: { onOpenSettings: () => void
               c={c}
               active={view === "channel" && activeChannel === c.id}
               count={counts.c[c.id]}
+              syncing={!!channelSync[c.id]}
+              onSync={() => syncChannel(c.id)}
               onClick={() => setActiveChannel(c.id)}
               action={{ icon: <Link2 size={13} />, title: "Share channel", onClick: () => setAccessChannel(c) }}
             />
@@ -121,6 +125,8 @@ export default function Sidebar({ onOpenSettings }: { onOpenSettings: () => void
                 c={c}
                 active={view === "channel" && activeChannel === c.id}
                 count={counts.c[c.id]}
+                syncing={!!channelSync[c.id]}
+                onSync={() => syncChannel(c.id)}
                 onClick={() => setActiveChannel(c.id)}
                 action={{
                   icon: <Users size={13} />,
@@ -176,12 +182,16 @@ function ChannelRow({
   c,
   active,
   count,
+  syncing,
+  onSync,
   onClick,
   action,
 }: {
   c: Channel;
   active: boolean;
   count?: number;
+  syncing?: boolean;
+  onSync: () => void;
   onClick: () => void;
   action: { icon: React.ReactNode; title: string; onClick: () => void };
 }) {
@@ -194,6 +204,15 @@ function ChannelRow({
       <button onClick={onClick} className="flex min-w-0 flex-1 items-center gap-2 text-left">
         <span className="w-4 text-center text-lav-200">{c.emoji || <Hash size={14} />}</span>
         <span className="truncate">{c.name}</span>
+      </button>
+      <button
+        onClick={onSync}
+        title="Sync & reload"
+        className={`text-lav-200 hover:text-white ${
+          syncing ? "block" : "hidden group-hover:block"
+        }`}
+      >
+        <RefreshCw size={13} className={syncing ? "animate-spin" : ""} />
       </button>
       <button
         onClick={action.onClick}

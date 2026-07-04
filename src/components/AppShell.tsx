@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
+import { timeAgo } from "@/lib/date";
 import Sidebar from "./Sidebar";
 import MessageList from "./MessageList";
 import Composer from "./Composer";
@@ -15,8 +16,11 @@ export default function AppShell() {
   const activeChannel = useStore((s) => s.activeChannel);
   const searchQuery = useStore((s) => s.searchQuery);
   const setSearch = useStore((s) => s.setSearch);
+  const syncChannel = useStore((s) => s.syncChannel);
+  const channelSync = useStore((s) => s.channelSync);
 
   const channel = channels.find((c) => c.id === activeChannel);
+  const syncing = !!channelSync[activeChannel];
 
   let title = "";
   let icon = <Hash size={18} />;
@@ -45,6 +49,17 @@ export default function AppShell() {
             <span className="flex items-center gap-1 rounded-full bg-lav-100 px-2.5 py-1 text-xs font-medium text-lav-600">
               <Users size={12} /> shared · {channel.members?.length || 1}
             </span>
+          )}
+          {view === "channel" && (
+            <button
+              onClick={() => syncChannel(activeChannel)}
+              disabled={syncing}
+              title="Sync & reload this channel"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-lav-600 transition hover:bg-lav-100 disabled:opacity-60"
+            >
+              <RefreshCw size={13} className={syncing ? "animate-spin" : ""} />
+              {syncing ? "Syncing…" : "Sync"}
+            </button>
           )}
           <SyncBadge />
           <div className="ml-auto flex items-center gap-2">
@@ -84,22 +99,66 @@ export default function AppShell() {
 function SyncBadge() {
   const sync = useStore((s) => s.sync);
   const pending = useStore((s) => s.pending);
+  const activeChannel = useStore((s) => s.activeChannel);
+  const pulling = useStore((s) => !!s.channelSync[s.activeChannel]);
+  const last = useStore((s) => s.lastSynced[activeChannel]);
+
+  // Re-render periodically so the "· 2m ago" label stays fresh.
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => tick((n) => n + 1), 30000);
+    return () => clearInterval(t);
+  }, []);
 
   if (sync === "offline" || sync === "error")
     return (
-      <span className="flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-1 text-xs font-medium text-rose-600">
-        <CloudOff size={13} /> Offline · {pending} queued
-      </span>
+      <Badge tone="rose">
+        <CloudOff size={13} /> Offline{pending > 0 ? ` · ${pending} queued` : ""}
+      </Badge>
     );
   if (sync === "syncing")
     return (
-      <span className="flex items-center gap-1 rounded-full bg-lav-100 px-2.5 py-1 text-xs font-medium text-lav-600">
+      <Badge tone="lav">
         <RefreshCw size={13} className="animate-spin" /> Saving…
-      </span>
+      </Badge>
+    );
+  if (pulling)
+    return (
+      <Badge tone="lav">
+        <RefreshCw size={13} className="animate-spin" /> Syncing…
+      </Badge>
+    );
+  if (pending > 0)
+    return (
+      <Badge tone="amber">
+        <RefreshCw size={13} /> {pending} queued
+      </Badge>
     );
   return (
-    <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-600">
-      <Check size={13} /> Saved
+    <Badge tone="emerald">
+      <Check size={13} /> Saved{last ? ` · ${timeAgo(last)}` : ""}
+    </Badge>
+  );
+}
+
+function Badge({
+  tone,
+  children,
+}: {
+  tone: "rose" | "lav" | "amber" | "emerald";
+  children: React.ReactNode;
+}) {
+  const tones: Record<string, string> = {
+    rose: "bg-rose-100 text-rose-600",
+    lav: "bg-lav-100 text-lav-600",
+    amber: "bg-amber-100 text-amber-700",
+    emerald: "bg-emerald-100 text-emerald-600",
+  };
+  return (
+    <span
+      className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${tones[tone]}`}
+    >
+      {children}
     </span>
   );
 }
