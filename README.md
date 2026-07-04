@@ -1,12 +1,59 @@
+<div align="center">
+
 # Murmur 🪻
 
-A calm, **Slack-like** place to keep your messages & important items — with a privacy model most note apps don't have:
+**A calm, private, local-first home for your messages and notes.**
+
+Local-first · end-to-end encrypted · autosaved to a Google Sheet _you_ own · no servers · open source
+
+[![Live demo](https://img.shields.io/badge/Live-murmur--chat.vercel.app-8369c8?style=flat-square)](https://murmur-chat.vercel.app)
+[![License](https://img.shields.io/badge/License-Apache_2.0-6f54b0?style=flat-square)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=nextdotjs)](https://nextjs.org)
+[![PWA](https://img.shields.io/badge/PWA-installable-9b85d9?style=flat-square)](#-install-as-an-app-pwa)
+
+[**Open the app →**](https://murmur-chat.vercel.app/app) &nbsp;·&nbsp; [Deploy your own](#-deploy-your-own-one-click) &nbsp;·&nbsp; [How it works](#architecture)
+
+<br/>
+
+![Murmur — the interface](public/screenshots/app.png)
+
+</div>
+
+---
+
+A **Slack-like** place to keep your messages & important items — with a privacy model most note apps don't have:
 
 - 🗂 **Local-first.** Everything is stored in your browser as **date-wise JSON** (IndexedDB), one blob per day.
 - ☁️ **Autosaved to *your own* Google Sheet** via a Google Apps Script you deploy. Your data never touches a server we run.
 - 🔐 **100% private.** Each user's connection to their private sheet (URL + secret token) is **encrypted in the browser** with a key derived from their password. The master sheet that handles login stores only ciphertext — even its owner can't read your data or where it lives.
 - 🔄 **First login pulls your whole history** date-by-date (newest → oldest) so every device stays in sync.
-- 💜 Soft purplish-pastel UI. Deploys to **Vercel** with zero server secrets.
+- 📲 **Installable PWA** that works offline, and a soft purplish-pastel UI. Deploys to **Vercel** with zero server secrets.
+
+---
+
+## 🚀 Deploy your own (one-click)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftusharmali%2Fmurmur&env=NEXT_PUBLIC_MASTER_SCRIPT_URL&envDescription=Your%20master%20Apps%20Script%20Web%20App%20URL%20(see%20README%20step%201)&envLink=https%3A%2F%2Fgithub.com%2Ftusharmali%2Fmurmur%23setup&project-name=murmur&repository-name=murmur)
+
+1. Click the button — Vercel forks the repo and asks for one env var, **`NEXT_PUBLIC_MASTER_SCRIPT_URL`**.
+2. Paste your **master Apps Script Web App URL** (deploy it first — see [Setup step 1](#1-deploy-the-master-script-once)). Setting it here hides the endpoint-setup screen so your users only ever see sign in / create account.
+3. Deploy. That's it — your instance is live, and each user still deploys their own private Sheet at signup.
+
+> Don't have the master URL yet? Deploy the app with it blank, and the app will prompt you for it once on first run (fine for local dev; set the env var for production).
+
+---
+
+## 📲 Install as an app (PWA)
+
+Murmur ships as an installable **Progressive Web App**. On desktop Chrome/Edge, click the install icon in the address bar; on iOS Safari, **Share ▸ Add to Home Screen**. It launches in its own window, keeps a branded icon, and — because it's local-first — your notes stay available even fully offline.
+
+## Screenshots
+
+<p align="center">
+  <img src="public/screenshots/app-mobile.png" alt="Murmur on mobile" width="260" />
+  &nbsp;&nbsp;
+  <img src="public/screenshots/landing.png" alt="Murmur landing page" width="520" />
+</p>
 
 ---
 

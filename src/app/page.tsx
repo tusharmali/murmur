@@ -43,6 +43,7 @@ export default function LandingPage() {
       <SiteHeader />
       <Hero />
       <TrustStrip />
+      <Showcase />
       <Features />
       <HowItWorks />
       <PrivacyModel />
@@ -241,6 +242,45 @@ function TrustStrip() {
           </div>
         ))}
       </Reveal>
+    </section>
+  );
+}
+
+/* ----------------------------- Showcase ---------------------------- */
+
+function Showcase() {
+  return (
+    <section className="px-5 py-24">
+      <div className="mx-auto max-w-5xl">
+        <Reveal className="mx-auto mb-12 max-w-2xl text-center">
+          <SectionKicker icon={<Sparkles size={13} />}>See it in action</SectionKicker>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-lav-900 sm:text-4xl">
+            Familiar as chat. Private as a diary.
+          </h2>
+        </Reveal>
+
+        <Reveal delay={100}>
+          <div className="relative rounded-2xl border border-lav-200/70 bg-white/70 p-2 shadow-glow backdrop-blur">
+            <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-gradient-to-br from-lav-300/40 to-pastel-pink/40 blur-2xl" />
+            {/* browser chrome */}
+            <div className="flex items-center gap-1.5 px-3 py-2">
+              <span className="h-3 w-3 rounded-full bg-rose-300" />
+              <span className="h-3 w-3 rounded-full bg-amber-300" />
+              <span className="h-3 w-3 rounded-full bg-emerald-300" />
+              <span className="ml-3 truncate rounded-md bg-lav-50 px-3 py-1 text-xs text-lav-400">
+                murmur-chat.vercel.app/app
+              </span>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/screenshots/app.png"
+              alt="The Murmur interface — channels, messages grouped by date, pin and search"
+              className="w-full rounded-xl"
+              loading="lazy"
+            />
+          </div>
+        </Reveal>
+      </div>
     </section>
   );
 }

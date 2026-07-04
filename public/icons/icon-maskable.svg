@@ -1,0 +1,14 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9b85d9"/>
+      <stop offset="1" stop-color="#6f54b0"/>
+    </linearGradient>
+  </defs>
+  <!-- Full-bleed background so platform masks (circle/squircle) never clip content -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g fill="#ffffff" transform="translate(256 256) scale(0.72) translate(-256 -256)">
+    <path d="M256 116 C276 216, 296 236, 396 256 C296 276, 276 296, 256 396 C236 296, 216 276, 116 256 C216 236, 236 216, 256 116 Z"/>
+    <path d="M368 120 C376 152, 384 160, 416 168 C384 176, 376 184, 368 216 C360 184, 352 176, 320 168 C352 160, 360 152, 368 120 Z" opacity="0.9"/>
+  </g>
+</svg>
