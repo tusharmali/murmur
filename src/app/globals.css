@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, #efe9fc 0%, transparent 55%),
+    radial-gradient(1000px 500px at 110% 10%, #f7e8f6 0%, transparent 50%),
+    #f6f3fd;
+  color: #3a3350;
+}
+
+/* Pretty pastel scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cdbdf0 transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #d8caf2;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #c1abec;
+  background-clip: content-box;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+}
