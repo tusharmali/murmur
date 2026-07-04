@@ -48,6 +48,9 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true, "max-image-preview": "large" },
   },
+  verification: {
+    google: "76wdEasJi0AZYUT8ETfALWcEBmrScdA2czwbQZ8DYRM",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
