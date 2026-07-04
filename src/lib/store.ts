@@ -39,7 +39,7 @@ import {
   userPing,
 } from "./userApi";
 import { DEFAULT_CHANNELS, slugify } from "./defaults";
-import { todayKey } from "./date";
+import { todayKey, coerceDateKey, isDateKey } from "./date";
 
 const SESSION_KEY = "murmur::session";
 
@@ -145,7 +145,7 @@ export const useStore = create<State>((set, get) => ({
     await db.initDB(session.email);
     const channels = normalizeChannels((await db.getChannels()) || DEFAULT_CHANNELS);
     keyring = (await db.getMeta<Keyring>("keyring")) || {};
-    const days = await db.getAllDays();
+    const days = await healLocalDays(await db.getAllDays());
     set({ session, channels, days, ready: true, activeChannel: firstPersonal(channels) });
     get().processQueue();
     get().refreshSharedChannels();
@@ -386,10 +386,12 @@ export const useStore = create<State>((set, get) => ({
         const date = dates[i];
         set((s) => ({ initialSync: { ...s.initialSync, currentDate: date, done: i } }));
         const res = await remoteGetByDate(conn, date);
-        const msgs = (res?.messages || []).filter((m) => !m.deleted);
+        const msgs = sanitizeMessages(res?.messages).filter((m) => !m.deleted);
         msgs.sort((a, b) => a.ts - b.ts);
-        await db.putDay(date, msgs);
-        set((s) => ({ days: { ...s.days, [date]: msgs } }));
+        // Bucket under the sanitized key (Sheets may hand back a mangled date).
+        const key = coerceDateKey(date, msgs[0]?.ts) || date;
+        await db.putDay(key, msgs);
+        set((s) => ({ days: { ...s.days, [key]: msgs } }));
       }
       await db.putMeta("initialSyncDone", true);
       set((s) => ({ initialSync: { ...s.initialSync, active: false, done: dates.length } }));
@@ -557,6 +559,55 @@ function normalizeChannels(channels: Channel[]): Channel[] {
   return channels.map((c) => ({ ...c, kind: c.kind || "personal" }));
 }
 
+/**
+ * Heal messages coming back from a Google Sheet: normalize the `date` field to a
+ * clean YYYY-MM-DD key (Sheets can coerce it into a typed date on round-trip) so
+ * day grouping never produces an "Invalid Date" bucket.
+ */
+/**
+ * One-time (idempotent) local repair for data cached before the date fix:
+ * re-buckets every stored message under a clean YYYY-MM-DD key, de-duplicates
+ * by id (keeping the newest edit), and rewrites IndexedDB — removing any stale
+ * "Invalid Date" buckets. Safe to run on every bootstrap; a no-op once healed.
+ */
+async function healLocalDays(
+  raw: Record<string, Message[]>
+): Promise<Record<string, Message[]>> {
+  const oldKeys = Object.keys(raw);
+  const byId = new Map<string, Message>();
+  let changed = false;
+
+  for (const key of oldKeys) {
+    if (!isDateKey(key)) changed = true; // a mangled bucket key
+    for (const m of raw[key]) {
+      const date = coerceDateKey(m.date, m.ts);
+      const fixed = date === m.date ? m : ((changed = true), { ...m, date });
+      const prev = byId.get(fixed.id);
+      if (prev) changed = true; // collapsing a duplicate id
+      const rank = (x: Message) => x.editedTs || x.ts || 0;
+      if (!prev || rank(fixed) >= rank(prev)) byId.set(fixed.id, fixed);
+    }
+  }
+
+  const rebucketed: Record<string, Message[]> = {};
+  for (const m of byId.values()) (rebucketed[m.date] ||= []).push(m);
+  for (const d of Object.keys(rebucketed)) rebucketed[d].sort((a, b) => a.ts - b.ts);
+
+  if (changed) {
+    for (const k of oldKeys) if (!(k in rebucketed)) await db.deleteDay(k);
+    for (const d of Object.keys(rebucketed)) await db.putDay(d, rebucketed[d]);
+  }
+  return rebucketed;
+}
+
+function sanitizeMessages(msgs: Message[] | undefined): Message[] {
+  if (!msgs) return [];
+  return msgs.map((m) => {
+    const date = coerceDateKey(m.date, m.ts);
+    return date === m.date ? m : { ...m, date };
+  });
+}
+
 function firstPersonal(channels: Channel[]): string {
   const p = channels.find((c) => c.kind !== "shared");
   return p?.id || channels[0]?.id || "general";
@@ -603,7 +654,7 @@ function updateMembers(set: SetFn, get: () => State, channelId: string, members:
 /** Replace ALL local messages for a channel with the freshly-pulled set (reconciles others' edits/deletes). */
 async function replaceChannelMessages(set: SetFn, channelId: string, msgs: Message[]) {
   const byDate: Record<string, Message[]> = {};
-  for (const m of msgs.filter((x) => !x.deleted)) (byDate[m.date] ||= []).push(m);
+  for (const m of sanitizeMessages(msgs).filter((x) => !x.deleted)) (byDate[m.date] ||= []).push(m);
 
   const current = await db.getAllDays();
   const dates = new Set([...Object.keys(current), ...Object.keys(byDate)]);

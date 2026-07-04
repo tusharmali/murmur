@@ -43,6 +43,10 @@ npm install
 npm run dev      # http://localhost:3000
 ```
 
+**Routes:** `/` is the public landing page, `/app` is the vault itself (sign in /
+create account), and `/privacy`, `/terms`, `/security` are the policy pages.
+Visitors land on `/` and click **Open Murmur** to reach `/app`.
+
 **For a hosted deployment, set the master URL as an env var.** When
 `NEXT_PUBLIC_MASTER_SCRIPT_URL` is present, the master-endpoint setup screen is
 **completely hidden** — your users never see or change it; they only see sign in /

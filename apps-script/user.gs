@@ -60,7 +60,27 @@ function sheet_() {
     sh = ss.insertSheet(DATA_SHEET);
     sh.appendRow(COLS);
   }
+  // Keep the `date` column (col 3) as PLAIN TEXT so Sheets never coerces a
+  // "2026-07-04" string into a typed date (which would round-trip back as an
+  // "Invalid Date"). Idempotent and cheap; guards existing sheets too.
+  sh.getRange(1, 3, sh.getMaxRows(), 1).setNumberFormat('@');
   return sh;
+}
+
+function tz_() {
+  return SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone()
+    || Session.getScriptTimeZone()
+    || 'Etc/GMT';
+}
+
+/** Normalize a date cell (string OR a Sheets-coerced Date) to a YYYY-MM-DD key. */
+function toDateKey_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, tz_(), 'yyyy-MM-dd');
+  var s = String(v == null ? '' : v).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  var d = new Date(s);
+  if (!isNaN(d.getTime())) return Utilities.formatDate(d, tz_(), 'yyyy-MM-dd');
+  return s;
 }
 
 function rowFromMessage_(m) {
@@ -84,7 +104,7 @@ function messageFromRow_(r) {
   return {
     id: String(r[0]),
     channel: String(r[1] || 'general'),
-    date: String(r[2]),
+    date: toDateKey_(r[2]),
     ts: Number(r[3]) || 0,
     type: String(r[4] || 'message'),
     pinned: r[5] === true || r[5] === 'TRUE' || r[5] === 'true',
@@ -143,7 +163,7 @@ function getDates() {
   var set = {};
   for (var i = 0; i < rows.length; i++) {
     if (rows[i][6] === true || rows[i][6] === 'TRUE') continue; // skip deleted
-    set[String(rows[i][2])] = true;
+    set[toDateKey_(rows[i][2])] = true;
   }
   var dates = Object.keys(set).sort().reverse(); // newest first
   return { ok: true, dates: dates };
@@ -153,7 +173,7 @@ function getByDate(date) {
   var rows = allRows_();
   var out = [];
   for (var i = 0; i < rows.length; i++) {
-    if (String(rows[i][2]) === String(date)) out.push(messageFromRow_(rows[i]));
+    if (toDateKey_(rows[i][2]) === String(date)) out.push(messageFromRow_(rows[i]));
   }
   return { ok: true, messages: out };
 }

@@ -46,6 +46,10 @@ export async function putDay(date: string, messages: Message[]) {
   await (await db()).put("days", messages, date);
 }
 
+export async function deleteDay(date: string) {
+  await (await db()).delete("days", date);
+}
+
 export async function getAllDays(): Promise<Record<string, Message[]>> {
   const d = await db();
   const keys = (await d.getAllKeys("days")) as string[];
