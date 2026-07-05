@@ -3,11 +3,19 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import type { Channel } from "@/lib/types";
-import { Sparkles, Star, Plus, Settings, Hash, Users, Link2, UserPlus, RefreshCw } from "lucide-react";
+import { Sparkles, Star, Plus, Settings, Hash, Users, Link2, UserPlus, RefreshCw, X } from "lucide-react";
 import ChannelAccessModal from "./ChannelAccessModal";
 import JoinChannelModal from "./JoinChannelModal";
 
-export default function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
+export default function Sidebar({
+  onOpenSettings,
+  open = false,
+  onClose = () => {},
+}: {
+  onOpenSettings: () => void;
+  open?: boolean;
+  onClose?: () => void;
+}) {
   const channels = useStore((s) => s.channels);
   const activeChannel = useStore((s) => s.activeChannel);
   const view = useStore((s) => s.view);
@@ -46,7 +54,12 @@ export default function Sidebar({ onOpenSettings }: { onOpenSettings: () => void
   }
 
   return (
-    <aside className="flex w-64 flex-col bg-gradient-to-b from-lav-600 via-lav-600 to-lav-700 text-lav-50">
+    <>
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-gradient-to-b from-lav-600 via-lav-600 to-lav-700 text-lav-50 transition-transform duration-300 md:static md:z-auto md:translate-x-0 ${
+        open ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+      }`}
+    >
       <div className="flex items-center gap-2 px-4 py-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
           <Sparkles size={17} />
@@ -55,11 +68,21 @@ export default function Sidebar({ onOpenSettings }: { onOpenSettings: () => void
           <p className="text-sm font-semibold">Murmur</p>
           <p className="text-[11px] text-lav-200">{session?.displayName}</p>
         </div>
+        <button
+          onClick={onClose}
+          className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-lav-100 hover:bg-white/10 md:hidden"
+          aria-label="Close menu"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       <div className="px-3">
         <button
-          onClick={() => setView("starred")}
+          onClick={() => {
+            setView("starred");
+            onClose();
+          }}
           className={`mb-1 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition ${
             view === "starred" ? "bg-white/20 font-medium" : "hover:bg-white/10"
           }`}
@@ -81,7 +104,10 @@ export default function Sidebar({ onOpenSettings }: { onOpenSettings: () => void
               count={counts.c[c.id]}
               syncing={!!channelSync[c.id]}
               onSync={() => syncChannel(c.id)}
-              onClick={() => setActiveChannel(c.id)}
+              onClick={() => {
+                setActiveChannel(c.id);
+                onClose();
+              }}
               action={{ icon: <Link2 size={13} />, title: "Share channel", onClick: () => setAccessChannel(c) }}
             />
           ))}
@@ -127,7 +153,10 @@ export default function Sidebar({ onOpenSettings }: { onOpenSettings: () => void
                 count={counts.c[c.id]}
                 syncing={!!channelSync[c.id]}
                 onSync={() => syncChannel(c.id)}
-                onClick={() => setActiveChannel(c.id)}
+                onClick={() => {
+                setActiveChannel(c.id);
+                onClose();
+              }}
                 action={{
                   icon: <Users size={13} />,
                   title: "Channel access",
@@ -140,20 +169,23 @@ export default function Sidebar({ onOpenSettings }: { onOpenSettings: () => void
       </nav>
 
       <button
-        onClick={onOpenSettings}
+        onClick={() => {
+          onOpenSettings();
+          onClose();
+        }}
         className="flex items-center gap-2 border-t border-white/10 px-4 py-3 text-sm text-lav-100 transition hover:bg-white/10"
       >
         <Settings size={15} /> Settings
       </button>
-
-      {accessChannel && (
-        <ChannelAccessModal
-          channelId={accessChannel.id}
-          onClose={() => setAccessChannel(null)}
-        />
-      )}
-      {joinOpen && <JoinChannelModal onClose={() => setJoinOpen(false)} />}
     </aside>
+
+    {/* Modals live OUTSIDE the drawer: a transformed ancestor would otherwise
+        break their `fixed inset-0` positioning. */}
+    {accessChannel && (
+      <ChannelAccessModal channelId={accessChannel.id} onClose={() => setAccessChannel(null)} />
+    )}
+    {joinOpen && <JoinChannelModal onClose={() => setJoinOpen(false)} />}
+    </>
   );
 }
 

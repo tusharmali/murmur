@@ -7,10 +7,11 @@ import Sidebar from "./Sidebar";
 import MessageList from "./MessageList";
 import Composer from "./Composer";
 import SettingsModal from "./SettingsModal";
-import { Search, Hash, Star, X, CloudOff, RefreshCw, Check, Users } from "lucide-react";
+import { Search, Hash, Star, X, CloudOff, RefreshCw, Check, Users, Menu } from "lucide-react";
 
 export default function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const view = useStore((s) => s.view);
   const channels = useStore((s) => s.channels);
   const activeChannel = useStore((s) => s.activeChannel);
@@ -37,13 +38,32 @@ export default function AppShell() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar onOpenSettings={() => setSettingsOpen(true)} />
+      {/* Mobile drawer backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <Sidebar
+        onOpenSettings={() => setSettingsOpen(true)}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       <main className="flex min-w-0 flex-1 flex-col">
-        <header className="glass z-10 flex items-center gap-3 border-b border-lav-200/60 px-5 py-3 dark:border-night-border">
-          <div className="flex items-center gap-2 font-semibold text-lav-800 dark:text-lav-100">
+        <header className="glass z-10 flex items-center gap-2 border-b border-lav-200/60 px-3 py-3 sm:gap-3 sm:px-5 dark:border-night-border">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-lav-600 hover:bg-lav-100 md:hidden dark:text-lav-300 dark:hover:bg-night-700"
+            aria-label="Open menu"
+          >
+            <Menu size={20} />
+          </button>
+          <div className="flex min-w-0 items-center gap-2 font-semibold text-lav-800 dark:text-lav-100">
             {icon}
-            <span>{title}</span>
+            <span className="truncate">{title}</span>
           </div>
           {view === "channel" && channel?.kind === "shared" && (
             <span className="flex items-center gap-1 rounded-full bg-lav-100 px-2.5 py-1 text-xs font-medium text-lav-600">
@@ -55,15 +75,17 @@ export default function AppShell() {
               onClick={() => syncChannel(activeChannel)}
               disabled={syncing}
               title="Sync & reload this channel"
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-lav-600 transition hover:bg-lav-100 disabled:opacity-60 dark:text-lav-300 dark:hover:bg-night-700"
+              className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-lav-600 transition hover:bg-lav-100 disabled:opacity-60 sm:px-2.5 dark:text-lav-300 dark:hover:bg-night-700"
             >
               <RefreshCw size={13} className={syncing ? "animate-spin" : ""} />
-              {syncing ? "Syncing…" : "Sync"}
+              <span className="hidden sm:inline">{syncing ? "Syncing…" : "Sync"}</span>
             </button>
           )}
-          <SyncBadge />
-          <div className="ml-auto flex items-center gap-2">
-            <div className="relative">
+          <div className="hidden sm:block">
+            <SyncBadge />
+          </div>
+          <div className="ml-auto flex min-w-0 items-center gap-2">
+            <div className="relative min-w-0">
               <Search
                 size={15}
                 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lav-400"
@@ -71,8 +93,8 @@ export default function AppShell() {
               <input
                 value={searchQuery}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search everything…"
-                className="w-56 rounded-xl border border-lav-200 bg-white/70 py-2 pl-9 pr-8 text-sm outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200 dark:border-night-border dark:bg-night-700/70 dark:text-lav-100 dark:placeholder:text-lav-400"
+                placeholder="Search…"
+                className="w-32 rounded-xl border border-lav-200 bg-white/70 py-2 pl-9 pr-8 text-sm outline-none focus:border-lav-400 focus:ring-2 focus:ring-lav-200 sm:w-56 dark:border-night-border dark:bg-night-700/70 dark:text-lav-100 dark:placeholder:text-lav-400"
               />
               {searchQuery && (
                 <button
