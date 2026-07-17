@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { getMasterUrl, setMasterUrl, masterPing } from "@/lib/masterApi";
-import { Lock, Sparkles, ShieldCheck, ChevronDown, Check, Loader2 } from "lucide-react";
+import { Lock, Sparkles, ShieldCheck, ChevronDown, Check, Loader2, ExternalLink } from "lucide-react";
 
 // Baked-in at build time. When set, users never see the master-endpoint setup.
 const ENV_LOCKED = Boolean(process.env.NEXT_PUBLIC_MASTER_SCRIPT_URL);
@@ -229,8 +229,13 @@ function Field(props: {
   );
 }
 
+const RAW_BASE = "https://raw.githubusercontent.com/tusharmali/murmur/main/apps-script";
+
 function SetupGuide({ which }: { which: "master" | "user" }) {
   const [open, setOpen] = useState(false);
+  const file = which === "master" ? "master.gs" : "user.gs";
+  const rawUrl = `${RAW_BASE}/${file}`;
+
   return (
     <div className="mt-3">
       <button
@@ -241,20 +246,61 @@ function SetupGuide({ which }: { which: "master" | "user" }) {
         How do I get this?
       </button>
       {open && (
-        <ol className="mt-2 list-decimal space-y-1 pl-5 text-[11px] leading-relaxed text-lav-500">
-          <li>
-            Create a new Google Sheet → <b>Extensions ▸ Apps Script</b>.
-          </li>
-          <li>
-            Paste <code>{which === "master" ? "apps-script/master.gs" : "apps-script/user.gs"}</code>
-            {which === "user" && <> and set a long random <code>TOKEN</code></>}. Save.
-          </li>
-          <li>
-            <b>Deploy ▸ New deployment ▸ Web app</b> — Execute as <b>Me</b>, access{" "}
-            <b>Anyone</b>.
-          </li>
-          <li>Copy the Web app URL and paste it above.</li>
-        </ol>
+        <div className="mt-2">
+          <div className="mb-2 flex flex-wrap gap-2">
+            <a
+              href={rawUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-lg bg-lav-500 px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-lav-600"
+            >
+              <ExternalLink size={12} /> Open {file}
+            </a>
+            <a
+              href="https://sheets.new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-lg border border-lav-200 px-2.5 py-1.5 text-[11px] font-semibold text-lav-600 transition hover:bg-lav-50"
+            >
+              <ExternalLink size={12} /> New Google Sheet
+            </a>
+            <a
+              href="/setup"
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-lg border border-lav-200 px-2.5 py-1.5 text-[11px] font-semibold text-lav-600 transition hover:bg-lav-50"
+            >
+              Full guide
+            </a>
+          </div>
+          <ol className="list-decimal space-y-1 pl-5 text-[11px] leading-relaxed text-lav-500">
+            <li>
+              Click <b>New Google Sheet</b> above → <b>Extensions ▸ Apps Script</b>.
+            </li>
+            <li>
+              Click <b>Open {file}</b>, select all (Ctrl+A) and copy. Paste it into Apps Script,
+              replacing everything there.
+            </li>
+            {which === "user" && (
+              <li>
+                Replace <code>CHANGE_ME_to_a_long_random_secret</code> with a long random string —
+                that&rsquo;s your <b>secret token</b>. Save (Ctrl+S).
+              </li>
+            )}
+            <li>
+              <b>Deploy ▸ New deployment ▸ Web app</b> — Execute as <b>Me</b>, access{" "}
+              <b>Anyone</b>. Authorize when prompted.
+            </li>
+            <li>
+              Copy the <b>Web app URL</b> and paste it above
+              {which === "user" && <> (with the token you chose)</>}.
+            </li>
+          </ol>
+          <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] leading-relaxed text-amber-700">
+            <b>Updating later?</b> Use <b>Deploy ▸ Manage deployments ▸ ✏️ Edit ▸ Version: New
+            version</b> — never &ldquo;New deployment&rdquo;, which creates a different URL and
+            leaves your account on the old code.
+          </p>
+        </div>
       )}
     </div>
   );

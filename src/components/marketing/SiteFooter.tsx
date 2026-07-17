@@ -26,6 +26,7 @@ export default function SiteFooter() {
               <FooterLink href="/#features">Features</FooterLink>
               <FooterLink href="/#how">How it works</FooterLink>
               <FooterLink href="/#privacy">Privacy model</FooterLink>
+              <FooterLink href="/setup">Setup guide</FooterLink>
               <FooterLink href="/app">Open Murmur</FooterLink>
             </FooterCol>
             <FooterCol title="Legal">

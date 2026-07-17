@@ -119,6 +119,24 @@ body {
   border: 1px solid rgba(227, 217, 248, 0.7);
 }
 
+/* Markdown inside chat messages — tight, chat-like block rhythm */
+.murmur-md > *:first-child {
+  margin-top: 0;
+}
+.murmur-md > *:last-child {
+  margin-bottom: 0;
+}
+.murmur-md p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.murmur-md p + p {
+  margin-top: 0.5rem;
+}
+.murmur-md strong {
+  font-weight: 600;
+}
+
 /* Long-form legal / policy typography */
 .legal {
   color: #4b4363;

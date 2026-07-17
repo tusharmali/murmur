@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useStore } from "@/lib/store";
 import type { Message } from "@/lib/types";
 import { prettyTime } from "@/lib/date";
+import MessageBody from "./MessageBody";
 import { Star, Pencil, Trash2, Copy, Check, X } from "lucide-react";
 
 const AVATAR_COLORS = [
@@ -113,9 +114,9 @@ export default function MessageItem({
             </div>
           </div>
         ) : (
-          <p className="msg-text whitespace-pre-wrap break-words leading-relaxed text-lav-700 dark:text-lav-200">
-            {linkify(message.text)}
-          </p>
+          <div className="msg-text break-words">
+            <MessageBody text={message.text} />
+          </div>
         )}
       </div>
 
@@ -171,21 +172,3 @@ function IconBtn({
   );
 }
 
-function linkify(text: string) {
-  const parts = text.split(/(https?:\/\/[^\s]+)/g);
-  return parts.map((part, i) =>
-    /^https?:\/\//.test(part) ? (
-      <a
-        key={i}
-        href={part}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-lav-600 underline decoration-lav-300 underline-offset-2 hover:text-lav-700"
-      >
-        {part}
-      </a>
-    ) : (
-      <span key={i}>{part}</span>
-    )
-  );
-}

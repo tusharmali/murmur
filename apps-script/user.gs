@@ -64,6 +64,7 @@ function doPost(e) {
       case 'getAll':      res = scope ? ownerOnly_() : getAll(); break;
       case 'getSettings': res = scope ? ownerOnly_() : getSettings(); break;
       case 'setSettings': res = scope ? ownerOnly_() : setSettings(req.settings); break;
+      case 'uploadImage': res = scope ? ownerOnly_() : uploadImage(req); break;
       default:            res = { ok: false, error: 'unknown_action' };
     }
     return json(res);
@@ -232,6 +233,29 @@ function getAll() {
   var out = [];
   for (var i = 0; i < rows.length; i++) out.push(messageFromRow_(rows[i]));
   return { ok: true, messages: out };
+}
+
+/* ----------------- image uploads (your own Drive) ----------------- */
+// Images are stored in a "Murmur Uploads" folder in YOUR Google Drive — not in
+// the sheet (a cell caps out around 50k chars). To let a browser <img> render
+// them, the file is shared "anyone with the link": unlisted, but reachable by
+// anyone holding the URL. Prefer pasting an image URL if that's not acceptable.
+// NOTE: this uses DriveApp, so redeploying will ask you to re-authorize Drive.
+
+function uploadsFolder_() {
+  var name = 'Murmur Uploads';
+  var it = DriveApp.getFoldersByName(name);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(name);
+}
+
+function uploadImage(req) {
+  if (!req.data) return { ok: false, error: 'missing_fields' };
+  var mime = String(req.mimeType || 'image/png');
+  if (mime.indexOf('image/') !== 0) return { ok: false, error: 'not_an_image' };
+  var blob = Utilities.newBlob(Utilities.base64Decode(req.data), mime, String(req.name || 'murmur-image'));
+  var file = uploadsFolder_().createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return { ok: true, url: 'https://lh3.googleusercontent.com/d/' + file.getId(), id: file.getId() };
 }
 
 /* ----------------- settings (cross-device prefs) ----------------- */

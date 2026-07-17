@@ -37,6 +37,7 @@ import {
   remoteGetByChannel,
   remoteGetDates,
   remoteUpsert,
+  remoteUploadImage,
   remoteGetSettings,
   remoteSetSettings,
   userPing,
@@ -84,6 +85,7 @@ interface State {
   addChannel: (name: string) => Promise<void>;
   renameChannel: (channelId: string, name: string) => Promise<void>;
   syncChannel: (channelId: string) => Promise<void>;
+  uploadImage: (file: File) => Promise<string>;
 
   send: (text: string) => Promise<void>;
   edit: (m: Message, text: string) => Promise<void>;
@@ -396,6 +398,19 @@ export const useStore = create<State>((set, get) => ({
     await db.putChannels(next);
   },
 
+  /** Upload an image to the user's own Drive and return a renderable URL. */
+  uploadImage: async (file) => {
+    const { session } = get();
+    if (!session) throw new Error("You're not signed in.");
+    const data = await fileToBase64(file);
+    const res = await remoteUploadImage(
+      { scriptUrl: session.scriptUrl, token: session.token },
+      { data, mimeType: file.type, name: file.name }
+    );
+    if (!res?.ok || !res.url) throw new Error(mapErr(res?.error));
+    return res.url;
+  },
+
   /** Push pending writes, then pull ONLY this channel and reload its chats. */
   syncChannel: async (channelId) => {
     if (!channelId || get().channelSync[channelId]) return; // busy / invalid
@@ -645,6 +660,20 @@ export const useStore = create<State>((set, get) => ({
 }));
 
 /* ---------- helpers ---------- */
+
+/** Read a File as raw base64 (no data: prefix) for the Apps Script upload. */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onerror = () => reject(new Error("Could not read that file."));
+    r.onload = () => {
+      const s = String(r.result || "");
+      const comma = s.indexOf(",");
+      resolve(comma === -1 ? s : s.slice(comma + 1));
+    };
+    r.readAsDataURL(file);
+  });
+}
 
 function normalizeChannels(channels: Channel[]): Channel[] {
   return channels.map((c) => ({ ...c, kind: c.kind || "personal" }));

@@ -16,6 +16,14 @@ export async function remoteUpsert(c: Conn, message: Message) {
   return post(c.scriptUrl, { action: "upsert", token: c.token, message });
 }
 
+/** Upload an image to the owner's Drive; returns a browser-renderable URL. */
+export async function remoteUploadImage(
+  c: Conn,
+  p: { data: string; mimeType: string; name: string }
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+  return post(c.scriptUrl, { action: "uploadImage", token: c.token, ...p });
+}
+
 /** `channel` is required for scoped (shared-channel) tokens to authorize the delete. */
 export async function remoteDelete(c: Conn, id: string, channel?: string) {
   return post(c.scriptUrl, { action: "delete", token: c.token, id, channel });
