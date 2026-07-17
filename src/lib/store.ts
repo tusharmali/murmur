@@ -81,6 +81,7 @@ interface State {
   setView: (v: View) => void;
   setSearch: (q: string) => void;
   addChannel: (name: string) => Promise<void>;
+  renameChannel: (channelId: string, name: string) => Promise<void>;
   syncChannel: (channelId: string) => Promise<void>;
 
   send: (text: string) => Promise<void>;
@@ -169,9 +170,16 @@ export const useStore = create<State>((set, get) => ({
       return;
     }
     await db.initDB(session.email);
-    const channels = normalizeChannels((await db.getChannels()) || DEFAULT_CHANNELS);
     keyring = (await db.getMeta<Keyring>("keyring")) || {};
     const days = await healLocalDays(await db.getAllDays());
+    let channels = normalizeChannels((await db.getChannels()) || DEFAULT_CHANNELS);
+    // Never let messages become invisible: if any message points at a channel we
+    // don't have, adopt it back into the sidebar.
+    const adopted = adoptOrphanChannels(channels, days);
+    if (adopted !== channels) {
+      channels = adopted;
+      await db.putChannels(channels);
+    }
     set({ session, channels, days, ready: true, activeChannel: firstPersonal(channels) });
     get().processQueue();
     get().refreshSharedChannels();
@@ -375,6 +383,18 @@ export const useStore = create<State>((set, get) => ({
     get().processQueue();
   },
 
+  /**
+   * Rename a channel's DISPLAY name only. The channel id (what messages are
+   * tagged with) never changes, so renaming can't orphan anything.
+   */
+  renameChannel: async (channelId, name) => {
+    const label = name.trim().slice(0, 32);
+    if (!label) return;
+    const next = get().channels.map((c) => (c.id === channelId ? { ...c, name: label } : c));
+    set({ channels: next });
+    await db.putChannels(next);
+  },
+
   /** Push pending writes, then pull ONLY this channel and reload its chats. */
   syncChannel: async (channelId) => {
     if (!channelId || get().channelSync[channelId]) return; // busy / invalid
@@ -484,22 +504,22 @@ export const useStore = create<State>((set, get) => ({
     let ch = channels.find((c) => c.id === channelId);
     if (!ch) return null;
 
-    let targetId = channelId;
-    // Personal -> shared requires a globally-unique id; migrate messages to a uuid.
-    if (ch.kind === "personal") {
-      targetId = crypto.randomUUID();
-      await migrateChannelId(set, get, channelId, targetId, session);
-      ch = { ...ch, id: targetId };
-    }
+    // A personal channel needs a globally-unique id before it can be shared.
+    // IMPORTANT: publish to the master FIRST and only migrate messages once that
+    // succeeds. Migrating first meant a failed share (e.g. an out-of-date master
+    // script) left every message retagged to an orphan id — i.e. data vanishing
+    // from the channel. Reserve first, mutate last.
+    const isPersonal = ch.kind === "personal";
+    const targetId = isPersonal ? crypto.randomUUID() : channelId;
+    const name = ch.name;
 
     const key = keyring[targetId] || randomKeyB64();
-    keyring[targetId] = key;
     const aesKey = await importAesKeyB64(key);
     const connBlob = {
       scriptUrl: session.scriptUrl,
       token: session.token,
       channelId: targetId,
-      name: ch.name,
+      name,
       ownerEmail: session.email,
     };
     const enc = await encryptJSON(connBlob, aesKey);
@@ -507,14 +527,22 @@ export const useStore = create<State>((set, get) => ({
       email: session.email,
       verifier: session.verifier,
       channelId: targetId,
-      name: ch.name,
+      name,
       enc,
     });
-    if (!res?.ok) throw new Error(res?.error || "Could not share channel.");
+    if (!res?.ok) throw new Error(mapErr(res?.error)); // nothing mutated yet — safe to bail
+
+    // Master accepted it: now it's safe to commit local + remote changes.
+    keyring[targetId] = key;
+    if (isPersonal) {
+      await migrateChannelId(set, get, channelId, targetId, session);
+      ch = { ...ch, id: targetId };
+    }
 
     const sharedCh: Channel = {
       ...ch,
       id: targetId,
+      name,
       kind: "shared",
       isOwner: true,
       ownerEmail: session.email,
@@ -616,6 +644,31 @@ export const useStore = create<State>((set, get) => ({
 
 function normalizeChannels(channels: Channel[]): Channel[] {
   return channels.map((c) => ({ ...c, kind: c.kind || "personal" }));
+}
+
+/**
+ * Safety net against orphaned data: a message whose `channel` id has no matching
+ * Channel would never render anywhere. That can happen if a share is interrupted
+ * midway, or channels are restored on a new device before their messages. Adopt
+ * any such id back into the sidebar so the messages are always reachable.
+ * Returns the original array unchanged when there's nothing to adopt.
+ */
+function adoptOrphanChannels(channels: Channel[], days: Record<string, Message[]>): Channel[] {
+  const known = new Set(channels.map((c) => c.id));
+  const orphans = new Set<string>();
+  for (const date of Object.keys(days)) {
+    for (const m of days[date]) {
+      if (m.channel && !known.has(m.channel)) orphans.add(m.channel);
+    }
+  }
+  if (orphans.size === 0) return channels;
+  const added: Channel[] = [...orphans].map((id) => ({
+    id,
+    name: `recovered-${id.slice(0, 6)}`,
+    emoji: "🛟",
+    kind: "personal" as const,
+  }));
+  return [...channels, ...added];
 }
 
 /**
@@ -860,6 +913,10 @@ function startSyncLoop(get: () => State) {
 
 function mapErr(code?: string): string {
   switch (code) {
+    case "unknown_action":
+      return "Your Apps Script is out of date. Redeploy the latest script (Deploy ▸ Manage deployments ▸ ✏️ Edit ▸ Version: New version ▸ Deploy), then try again.";
+    case "unauthorized":
+      return "Your sheet rejected the request — the secret token doesn't match the TOKEN in your script.";
     case "email_exists":
       return "An account with that email already exists.";
     case "invalid_credentials":

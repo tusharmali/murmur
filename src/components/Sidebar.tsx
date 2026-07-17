@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import type { Channel } from "@/lib/types";
-import { Sparkles, Star, Plus, Settings, Hash, Users, Link2, UserPlus, RefreshCw, X } from "lucide-react";
+import { Sparkles, Star, Plus, Settings, Hash, Users, Link2, UserPlus, RefreshCw, X, Pencil } from "lucide-react";
 import ChannelAccessModal from "./ChannelAccessModal";
 import JoinChannelModal from "./JoinChannelModal";
 
@@ -26,6 +26,7 @@ export default function Sidebar({
   const session = useStore((s) => s.session);
   const syncChannel = useStore((s) => s.syncChannel);
   const channelSync = useStore((s) => s.channelSync);
+  const renameChannel = useStore((s) => s.renameChannel);
 
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -104,6 +105,7 @@ export default function Sidebar({
               count={counts.c[c.id]}
               syncing={!!channelSync[c.id]}
               onSync={() => syncChannel(c.id)}
+              onRename={(n) => renameChannel(c.id, n)}
               onClick={() => {
                 setActiveChannel(c.id);
                 onClose();
@@ -153,10 +155,11 @@ export default function Sidebar({
                 count={counts.c[c.id]}
                 syncing={!!channelSync[c.id]}
                 onSync={() => syncChannel(c.id)}
+                onRename={(n) => renameChannel(c.id, n)}
                 onClick={() => {
-                setActiveChannel(c.id);
-                onClose();
-              }}
+                  setActiveChannel(c.id);
+                  onClose();
+                }}
                 action={{
                   icon: <Users size={13} />,
                   title: "Channel access",
@@ -216,6 +219,7 @@ function ChannelRow({
   count,
   syncing,
   onSync,
+  onRename,
   onClick,
   action,
 }: {
@@ -224,18 +228,69 @@ function ChannelRow({
   count?: number;
   syncing?: boolean;
   onSync: () => void;
+  onRename: (name: string) => void;
   onClick: () => void;
   action: { icon: React.ReactNode; title: string; onClick: () => void };
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(c.name);
+
+  function commit() {
+    const v = draft.trim();
+    if (v && v !== c.name) onRename(v);
+    else setDraft(c.name);
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg bg-white/20 px-2.5 py-1.5">
+        <span className="w-4 text-center text-lav-200">{c.emoji || <Hash size={14} />}</span>
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") {
+              setDraft(c.name);
+              setEditing(false);
+            }
+          }}
+          maxLength={32}
+          className="min-w-0 flex-1 rounded bg-white/90 px-1.5 py-0.5 text-sm text-lav-800 outline-none"
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition ${
         active ? "bg-white/20 font-medium" : "text-lav-100 hover:bg-white/10"
       }`}
     >
-      <button onClick={onClick} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+      <button
+        onClick={onClick}
+        onDoubleClick={() => {
+          setDraft(c.name);
+          setEditing(true);
+        }}
+        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+      >
         <span className="w-4 text-center text-lav-200">{c.emoji || <Hash size={14} />}</span>
         <span className="truncate">{c.name}</span>
+      </button>
+      <button
+        onClick={() => {
+          setDraft(c.name);
+          setEditing(true);
+        }}
+        title="Rename channel"
+        className="hidden text-lav-200 hover:text-white group-hover:block"
+      >
+        <Pencil size={12} />
       </button>
       <button
         onClick={onSync}
