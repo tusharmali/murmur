@@ -17,6 +17,7 @@ import {
   randomSaltB64,
   randomKeyB64,
   importAesKeyB64,
+  channelTokenB64,
 } from "./crypto";
 import {
   masterGetSalt,
@@ -439,7 +440,7 @@ export const useStore = create<State>((set, get) => ({
         continue;
       }
       try {
-        if (item.op === "delete") await remoteDelete(conn, item.key);
+        if (item.op === "delete") await remoteDelete(conn, item.key, channelId);
         else if (item.message) await remoteUpsert(conn, item.message);
         await db.dequeue(item.key);
       } catch {
@@ -515,9 +516,12 @@ export const useStore = create<State>((set, get) => ({
 
     const key = keyring[targetId] || randomKeyB64();
     const aesKey = await importAesKeyB64(key);
+    // Share a token scoped to THIS channel only — never the master TOKEN, which
+    // would let any invitee read every other channel in this sheet.
+    const scopedToken = await channelTokenB64(session.token, targetId);
     const connBlob = {
       scriptUrl: session.scriptUrl,
-      token: session.token,
+      token: scopedToken,
       channelId: targetId,
       name,
       ownerEmail: session.email,

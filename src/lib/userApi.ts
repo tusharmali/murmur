@@ -16,8 +16,9 @@ export async function remoteUpsert(c: Conn, message: Message) {
   return post(c.scriptUrl, { action: "upsert", token: c.token, message });
 }
 
-export async function remoteDelete(c: Conn, id: string) {
-  return post(c.scriptUrl, { action: "delete", token: c.token, id });
+/** `channel` is required for scoped (shared-channel) tokens to authorize the delete. */
+export async function remoteDelete(c: Conn, id: string, channel?: string) {
+  return post(c.scriptUrl, { action: "delete", token: c.token, id, channel });
 }
 
 export async function remoteGetDates(c: Conn): Promise<{ ok: boolean; dates: string[] }> {

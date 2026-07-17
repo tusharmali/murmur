@@ -31,21 +31,40 @@ function doPost(e) {
   lock.tryLock(30000);
   try {
     var req = JSON.parse(e.postData.contents);
-    if (req.action === 'ping') return json({ ok: true, service: 'murmur-user', version: '1.0' });
-    if (String(req.token) !== String(TOKEN)) return json({ ok: false, error: 'unauthorized' });
+    if (req.action === 'ping') return json({ ok: true, service: 'murmur-user', version: '2.0' });
+
+    // ---- Authorization -------------------------------------------------
+    // Two kinds of caller:
+    //   OWNER  — presents the master TOKEN, may do anything.
+    //   MEMBER — presents a per-channel token (see channelToken_). Scoped to
+    //            exactly one channel; can never read other channels or settings.
+    var token = String(req.token || '');
+    var isOwner = token === String(TOKEN);
+    var scope = null; // channelId this caller is limited to
+    if (!isOwner) {
+      var want = req.channel || (req.message && req.message.channel) || '';
+      if (!want || token !== channelToken_(want)) return json({ ok: false, error: 'unauthorized' });
+      scope = String(want);
+    }
+    function ownerOnly_() { return { ok: false, error: 'forbidden_scope' }; }
 
     var res;
     switch (req.action) {
-      case 'upsert':    res = upsert(req.message); break;
-      case 'upsertBatch': res = upsertBatch(req.messages); break;
-      case 'delete':    res = remove(req.id); break;
-      case 'getDates':  res = getDates(); break;
-      case 'getByDate': res = getByDate(req.date); break;
-      case 'getByChannel': res = getByChannel(req.channel); break;
-      case 'getAll':    res = getAll(); break;
-      case 'getSettings': res = getSettings(); break;
-      case 'setSettings': res = setSettings(req.settings); break;
-      default:          res = { ok: false, error: 'unknown_action' };
+      case 'upsert':
+        res = (scope && String(req.message && req.message.channel) !== scope)
+          ? ownerOnly_() : upsert(req.message);
+        break;
+      case 'upsertBatch': res = scope ? ownerOnly_() : upsertBatch(req.messages); break;
+      case 'delete':      res = remove(req.id, scope); break;
+      case 'getDates':    res = scope ? ownerOnly_() : getDates(); break;
+      case 'getByDate':   res = scope ? ownerOnly_() : getByDate(req.date); break;
+      case 'getByChannel':
+        res = (scope && String(req.channel) !== scope) ? ownerOnly_() : getByChannel(req.channel);
+        break;
+      case 'getAll':      res = scope ? ownerOnly_() : getAll(); break;
+      case 'getSettings': res = scope ? ownerOnly_() : getSettings(); break;
+      case 'setSettings': res = scope ? ownerOnly_() : setSettings(req.settings); break;
+      default:            res = { ok: false, error: 'unknown_action' };
     }
     return json(res);
   } catch (err) {
@@ -67,6 +86,16 @@ function sheet_() {
   // "Invalid Date"). Idempotent and cheap; guards existing sheets too.
   sh.getRange(1, 3, sh.getMaxRows(), 1).setNumberFormat('@');
   return sh;
+}
+
+/**
+ * Per-channel token = HMAC-SHA256(channelId, TOKEN), web-safe base64.
+ * Handed to people you invite so they can reach ONLY that channel — never the
+ * master TOKEN, which would expose this entire sheet.
+ */
+function channelToken_(channelId) {
+  var raw = Utilities.computeHmacSha256Signature(String(channelId), String(TOKEN));
+  return Utilities.base64EncodeWebSafe(raw);
 }
 
 function tz_() {
@@ -147,9 +176,15 @@ function upsertBatch(messages) {
   return { ok: true, count: messages.length };
 }
 
-function remove(id) {
+/** Delete by id. A scoped (member) caller may only delete within its channel. */
+function remove(id, scope) {
   var row = findRowById_(id);
-  if (row !== -1) sheet_().deleteRow(row);
+  if (row === -1) return { ok: true, id: id };
+  if (scope) {
+    var ch = String(sheet_().getRange(row, 2).getValue());
+    if (ch !== String(scope)) return { ok: false, error: 'forbidden_scope' };
+  }
+  sheet_().deleteRow(row);
   return { ok: true, id: id };
 }
 

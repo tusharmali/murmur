@@ -48,6 +48,28 @@ export function randomKeyB64(): string {
   return buf2b64(k.buffer);
 }
 
+/**
+ * Derive a per-channel token from the sheet's master TOKEN.
+ *
+ * Sharing must never hand out the master TOKEN — that would grant the invitee
+ * every action on the owner's sheet (including reading unrelated channels).
+ * Instead the owner shares HMAC-SHA256(channelId, TOKEN), which `user.gs`
+ * accepts *only* for that one channel. Must byte-match Apps Script's
+ * Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(id, TOKEN)).
+ */
+export async function channelTokenB64(masterToken: string, channelId: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    utf8(masterToken),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, utf8(channelId));
+  // web-safe base64, padding retained (matches base64EncodeWebSafe)
+  return buf2b64(sig).replace(/\+/g, "-").replace(/\//g, "_");
+}
+
 /** Import a raw base64 key as an AES-GCM CryptoKey. */
 export async function importAesKeyB64(b64: string): Promise<CryptoKey> {
   return crypto.subtle.importKey("raw", b642buf(b64), { name: "AES-GCM" }, false, [
